@@ -1,0 +1,10 @@
+{
+  "address": "0x90f79bf6eb2c4f870365e785982e1f101e93b906",
+  "proof": [
+    "0x8a3552d60a98e0ade765adddad0a2e420ca9b1eef5f326ba7ab860bb4ea72c94",
+    "0x070e8db97b197cc0e4a1790c5e6c3667bab32d733db7f815fbe84f5824c7168d",
+    "0x90a5fdc765808e5a2e0d816f52f09820c5f167703ce08d078eb87e2c194c5525"
+  ],
+  "name": "David Wilson",
+  "email": "david@example.com"
+}

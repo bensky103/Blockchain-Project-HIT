@@ -1,0 +1,43 @@
+node_modules
+.env
+coverage
+coverage.json
+typechain-types
+
+# Hardhat files
+cache
+artifacts
+
+# Build outputs
+dist
+build
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Web build
+web/dist
+web/node_modules

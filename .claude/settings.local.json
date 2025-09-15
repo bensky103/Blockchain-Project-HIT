@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npm run compile:*)",
+      "Bash(npx hardhat:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm ls:*)",
+      "Bash(Remove-Item -Recurse -Force node_modules)",
+      "Bash(Get-ChildItem -Force)",
+      "Bash(npm run deploy:local:*)",
+      "Bash(npx ts-node:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "address": "0x14dc79964da2c08b23698b3d3cc7ca32193d9955",
+  "proof": [
+    "0x93230d0b2377404a36412e26d231de4c7e1a9fb62e227b420200ee950a5ca9c0",
+    "0xa22d2d4af6076ff70babd4ffc5035bdce39be98f440f86a0ddc202e3cd935a59",
+    "0xd4453790033a2bd762f526409b7f358023773723d9e9bc42487e4996869162b6"
+  ],
+  "name": "Henry Clark",
+  "email": "henry@example.com"
+}
