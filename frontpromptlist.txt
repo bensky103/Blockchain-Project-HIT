@@ -1,0 +1,65 @@
+B) Frontend Prompt List (Vercel v0)
+
+You’ll paste these into v0 (not Claude). After each step, run locally, fix, then move on. v0 should also update docs/summary.md (you can copy the text it outputs).
+
+F0. Frontend Bootstrap
+
+Generate React+Vite (TS) app under /web with wagmi+viem, MetaMask connector, routes: / (home), /admin, /vote, /results. Read deployments/<network>.json. Add a global Web3Provider and a header with connect button, network name, status.
+
+Success: app runs; can connect wallet on Hardhat or Sepolia.
+Update summary.md: “FE shell ready; next: admin.”
+
+F1. Admin Page
+
+Build /admin with panels:
+
+Election Settings – set times (start/end), set reward, set token, set Merkle root.
+
+Candidates – add candidate (name + 3 topic scores 0–100).
+
+Voters – instructions to run CLI merkle tool, then paste root.
+Owner-only UI (graceful errors on non-owner).
+
+Success: owner can perform admin ops; confirmed via tx receipts.
+Update summary.md: “Admin features working; next: direct vote.”
+
+F2. Voter — Direct Vote
+
+Page /vote direct tab: list candidates → pick → supply Merkle proof. Support two modes:
+
+Auto-lookup from /public/merkle.json by connected address.
+
+Manual paste (for dev).
+On success: show tx receipt + new BAL balance.
+
+Success: whitelisted address can vote once; sees BAL update.
+Update summary.md: “Direct vote E2E OK; next: quiz vote.”
+
+F3. Voter — Quiz Vote (Anonymous Selection)
+
+Same /vote, second tab: three sliders (0–100) with topic labels; call voteByQuiz(answers, proof); do not reveal selected candidate; show success only.
+
+Success: quiz vote works; BAL minted; UI keeps candidate anonymous.
+Update summary.md: “Quiz flow E2E OK; next: results.”
+
+F4. Results Page
+
+/results: read candidates & votes; sort client-side; show totals/percentages; winner highlight; if endTs passed, show “Finalized” badge and provide a button to trigger finalizeIfEnded() once.
+
+Success: correct ranking and winner; finalize path demonstrated.
+Update summary.md: “Results view complete; next: UX/tests.”
+
+F5. UX Polish & FE Tests
+
+Add: toasts (pending/success/failure), network guard, loading states, input validation, error surfaces. Minimal tests for key components/flows.
+
+Success: tests pass; flows robust.
+Update summary.md: “FE polish done; next: README.”
+
+F6. Wrap-Up (Frontend README block)
+
+Produce FE sections for final README.md: prerequisites, env setup (RPC, chain ID), run scripts, admin workflow, voter workflow, expected outputs/screens, common errors (wrong chain, missing proofs, not owner).
+
+Success: FE docs ready for merge.
+Update summary.md: “FE docs staged.”
+

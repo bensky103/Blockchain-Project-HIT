@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./BalToken.sol";
 
 contract Election is Ownable, ReentrancyGuard {
@@ -61,6 +62,7 @@ contract Election is Ownable, ReentrancyGuard {
     event CandidateUpdated(uint256 indexed candidateId, string name);
     event CandidateDeactivated(uint256 indexed candidateId);
     event VoteCast(address indexed voter, uint256 indexed candidateId, bool isAnonymous);
+    event Voted(address indexed voter, uint256 indexed candidateId);
     event TimesSet(uint64 startTime, uint64 endTime);
     event MerkleRootSet(bytes32 root);
     event ElectionEnded(uint256 totalVotes);
@@ -76,8 +78,10 @@ contract Election is Ownable, ReentrancyGuard {
         _;
     }
 
+
     modifier onlyWhitelisted(bytes32[] memory proof, address voter) {
-        // TODO: Implement Merkle proof verification
+        bytes32 leaf = keccak256(abi.encodePacked(voter));
+        if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert InvalidMerkleProof();
         _;
     }
 
@@ -202,6 +206,10 @@ contract Election is Ownable, ReentrancyGuard {
         balToken = BalToken(tokenAddress);
     }
 
+    function setupTokenMinter() external onlyOwner {
+        balToken.addMinter(address(this));
+    }
+
     // View functions
     function getCandidates() external view returns (Candidate[] memory) {
         Candidate[] memory result = new Candidate[](candidateCount);
@@ -296,27 +304,20 @@ contract Election is Ownable, ReentrancyGuard {
         return false; // Non-voter should return false
     }
 
-    function voteAnonymous(
-        bytes32[] calldata _merkleProof,
-        uint8[3] calldata _voterProfile
-    ) external onlyDuringElection {
-        if (!electionConfig.questionnaireEnabled) revert InvalidQuestionnaire();
-        if (hasVoted[msg.sender]) revert AlreadyVoted();
+    function voteByQuiz(uint8[3] calldata answers, bytes32[] calldata proof)
+        external
+        nonReentrant
+        onlyWhitelisted(proof, msg.sender)
+        returns (bool)
+    {
+        require(block.timestamp >= startTs && block.timestamp <= endTs, "Election not open");
+        require(!hasVoted[msg.sender], "Already voted");
 
-        // Basic eligibility check (same as regular vote)
-        bool isEligible = false;
-        if (msg.sender == 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 ||
-            msg.sender == 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 ||
-            msg.sender == 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC) {
-            isEligible = true;
-        }
-        if (!isEligible) revert InvalidMerkleProof();
-
-        // Find best matching candidate using basic L1 distance
-        uint256 bestCandidateId = findBestMatchingCandidate(_voterProfile);
+        // Find best matching candidate using L1 distance
+        uint256 bestCandidateId = findBestMatchingCandidate(answers);
         require(bestCandidateId > 0, "No suitable candidate");
 
-        // Record vote
+        // Update state before external calls (reentrancy protection)
         hasVoted[msg.sender] = true;
         voterToCandidate[msg.sender] = bestCandidateId;
         candidates[bestCandidateId].voteCount++;
@@ -325,7 +326,10 @@ contract Election is Ownable, ReentrancyGuard {
         // Mint reward token
         balToken.mintVoteReward(msg.sender);
 
-        emit VoteCast(msg.sender, bestCandidateId, true);
+        // Emit event with chosen ID but don't return it to caller
+        emit Voted(msg.sender, bestCandidateId);
+
+        return true; // Only return success, not the candidate ID
     }
 
     function findBestMatchingCandidate(uint8[3] memory _voterProfile) internal view returns (uint256) {
@@ -399,26 +403,75 @@ contract Election is Ownable, ReentrancyGuard {
         return block.timestamp >= startTs && block.timestamp <= endTs;
     }
 
-    // Voting logic placeholder - to be implemented in next step
+    function finalizeIfEnded() external {
+        require(block.timestamp > endTs, "Election still active");
+
+        // No state changes besides emitting event
+        emit ResultsFinalized();
+    }
+
+    function getRanking() external view returns (uint256[] memory ids, uint256[] memory voteCounts) {
+        // Return unsorted results for gas efficiency (let UI sort)
+        ids = new uint256[](candidateCount);
+        voteCounts = new uint256[](candidateCount);
+
+        for (uint256 i = 0; i < candidateCount; i++) {
+            ids[i] = i + 1;
+            voteCounts[i] = candidates[i + 1].voteCount;
+        }
+
+        return (ids, voteCounts);
+    }
+
+    function getWinningCandidate() external view returns (uint256 candidateId, uint256 maxVotes) {
+        maxVotes = 0;
+        candidateId = 0;
+
+        for (uint256 i = 1; i <= candidateCount; i++) {
+            if (candidates[i].voteCount > maxVotes) {
+                maxVotes = candidates[i].voteCount;
+                candidateId = i;
+            }
+        }
+
+        return (candidateId, maxVotes);
+    }
+
+    function voteDirect(uint256 candidateId, bytes32[] calldata proof)
+        external
+        nonReentrant
+        onlyWhitelisted(proof, msg.sender)
+    {
+        require(block.timestamp >= startTs && block.timestamp <= endTs, "Election not open");
+        require(!hasVoted[msg.sender], "Already voted");
+        require(candidateId > 0 && candidateId <= candidateCount, "Invalid candidate");
+        require(candidates[candidateId].isActive, "Candidate not active");
+
+        // Update state before external calls (reentrancy protection)
+        hasVoted[msg.sender] = true;
+        voterToCandidate[msg.sender] = candidateId;
+        candidates[candidateId].voteCount++;
+        totalVotes++;
+
+        // Mint reward token
+        balToken.mintVoteReward(msg.sender);
+
+        emit Voted(msg.sender, candidateId);
+    }
+
+    // Legacy function for backward compatibility with tests
     function vote(
         uint256 candidateId,
         bytes32[] calldata merkleProof,
         uint8[3] calldata voterProfile
-    ) external onlyDuringElection {
+    ) external nonReentrant onlyWhitelisted(merkleProof, msg.sender) {
+        if (block.timestamp < startTs) revert ElectionNotStarted();
+        if (block.timestamp > endTs) revert ElectionEndedError();
         if (hasVoted[msg.sender]) revert AlreadyVoted();
         require(candidateId > 0 && candidateId <= candidateCount, "Invalid candidate");
         if (!candidates[candidateId].isActive) revert CandidateNotActive();
 
-        // Basic eligibility check (placeholder for Merkle proof verification)
-        bool isEligible = false;
-        if (msg.sender == 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 ||
-            msg.sender == 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 ||
-            msg.sender == 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC) {
-            isEligible = true;
-        }
-        if (!isEligible) revert InvalidMerkleProof();
-
-        // Record vote
+        // Update state before external calls (reentrancy protection)
         hasVoted[msg.sender] = true;
         voterToCandidate[msg.sender] = candidateId;
         candidates[candidateId].voteCount++;
@@ -428,5 +481,31 @@ contract Election is Ownable, ReentrancyGuard {
         balToken.mintVoteReward(msg.sender);
 
         emit VoteCast(msg.sender, candidateId, false);
+    }
+
+    // Legacy function for backward compatibility with tests
+    function voteAnonymous(
+        bytes32[] calldata merkleProof,
+        uint8[3] calldata voterProfile
+    ) external nonReentrant onlyWhitelisted(merkleProof, msg.sender) {
+        if (!electionConfig.questionnaireEnabled) revert InvalidQuestionnaire();
+        if (block.timestamp < startTs) revert ElectionNotStarted();
+        if (block.timestamp > endTs) revert ElectionEndedError();
+        if (hasVoted[msg.sender]) revert AlreadyVoted();
+
+        // Find best matching candidate using L1 distance
+        uint256 bestCandidateId = findBestMatchingCandidate(voterProfile);
+        require(bestCandidateId > 0, "No suitable candidate");
+
+        // Update state before external calls (reentrancy protection)
+        hasVoted[msg.sender] = true;
+        voterToCandidate[msg.sender] = bestCandidateId;
+        candidates[bestCandidateId].voteCount++;
+        totalVotes++;
+
+        // Mint reward token
+        balToken.mintVoteReward(msg.sender);
+
+        emit VoteCast(msg.sender, bestCandidateId, true);
     }
 }
