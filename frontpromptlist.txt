@@ -1,65 +1,145 @@
-B) Frontend Prompt List (Vercel v0)
+Paste to v0: //done
 
-You’ll paste these into v0 (not Claude). After each step, run locally, fix, then move on. v0 should also update docs/summary.md (you can copy the text it outputs).
+Task: Initialize the React app in /web. 
 
-F0. Frontend Bootstrap
+Add wagmi + viem; chain config for Hardhat & Sepolia; connectors for MetaMask.
 
-Generate React+Vite (TS) app under /web with wagmi+viem, MetaMask connector, routes: / (home), /admin, /vote, /results. Read deployments/<network>.json. Add a global Web3Provider and a header with connect button, network name, status.
+Central config file to load deployments/<network>.json.
 
-Success: app runs; can connect wallet on Hardhat or Sepolia.
-Update summary.md: “FE shell ready; next: admin.”
+App shell with routes: / (home), /admin, /vote, /results.
 
-F1. Admin Page
+Global UI: connect button, network status, toasts, error boundary.
 
-Build /admin with panels:
+Success criteria
+App runs with connect button; network switching guidance; routes render.
 
-Election Settings – set times (start/end), set reward, set token, set Merkle root.
+summary.md — append
+Screens scaffolded; next: admin flows.
 
-Candidates – add candidate (name + 3 topic scores 0–100).
+7) Admin Flows
 
-Voters – instructions to run CLI merkle tool, then paste root.
-Owner-only UI (graceful errors on non-owner).
+Paste to v0:
 
-Success: owner can perform admin ops; confirmed via tx receipts.
-Update summary.md: “Admin features working; next: direct vote.”
+Task: Implement /admin.
 
-F2. Voter — Direct Vote
+Panels:
 
-Page /vote direct tab: list candidates → pick → supply Merkle proof. Support two modes:
+Election Settings — set times (start/end), set reward, set token (if needed), set Merkle root (paste root).
 
-Auto-lookup from /public/merkle.json by connected address.
+Candidates — add candidate (name + 3 topic scores 0–100).
 
-Manual paste (for dev).
-On success: show tx receipt + new BAL balance.
+Voters — upload voters.csv → call our /tools CLI from docs (manual step) → paste root into UI → write to chain.
 
-Success: whitelisted address can vote once; sees BAL update.
-Update summary.md: “Direct vote E2E OK; next: quiz vote.”
+All actions gated to owner; show readable errors; show events confirmations.
 
-F3. Voter — Quiz Vote (Anonymous Selection)
+Provide a manual checklist to verify admin actions.
 
-Same /vote, second tab: three sliders (0–100) with topic labels; call voteByQuiz(answers, proof); do not reveal selected candidate; show success only.
+Success criteria
+Owner-only calls succeed; UI validated; errors shown for non-owner.
 
-Success: quiz vote works; BAL minted; UI keeps candidate anonymous.
-Update summary.md: “Quiz flow E2E OK; next: results.”
+summary.md — append
+Completed admin features; pending voter & quiz flows.
 
-F4. Results Page
+8) Voter Flow — Direct Vote
 
-/results: read candidates & votes; sort client-side; show totals/percentages; winner highlight; if endTs passed, show “Finalized” badge and provide a button to trigger finalizeIfEnded() once.
+Paste to v0:
 
-Success: correct ranking and winner; finalize path demonstrated.
-Update summary.md: “Results view complete; next: UX/tests.”
+Task: Implement /vote direct path.
 
-F5. UX Polish & FE Tests
+UI: select candidate; paste (or auto-fetch) Merkle proof (we’ll support both dev modes: local file or lookup by address from merkle.json dropped into /web/public).
 
-Add: toasts (pending/success/failure), network guard, loading states, input validation, error surfaces. Minimal tests for key components/flows.
+Call voteDirect(candidateId, proof); on success, show a receipt and the newly minted BAL balance (read ERC-20).
 
-Success: tests pass; flows robust.
-Update summary.md: “FE polish done; next: README.”
+Handle “already voted”, “window closed”, and “not whitelisted”.
 
-F6. Wrap-Up (Frontend README block)
+Success criteria
+A whitelisted address can vote once and sees BAL increase.
 
-Produce FE sections for final README.md: prerequisites, env setup (RPC, chain ID), run scripts, admin workflow, voter workflow, expected outputs/screens, common errors (wrong chain, missing proofs, not owner).
+summary.md — append
+Direct vote happy path OK; error states verified; next: quiz.
 
-Success: FE docs ready for merge.
-Update summary.md: “FE docs staged.”
+9) Voter Flow — Questionnaire (Anonymous Selection)
 
+Paste to v0:
+
+Task: Implement /vote quiz path.
+
+UI: 3 sliders (0–100) labeled with the topic names; explain that casting is anonymous and computed on-chain.
+
+Call voteByQuiz([a,b,c], proof); do not reveal chosen candidate in UI. Show only “Your vote has been cast.”
+
+Keep parity with direct path for errors & rewards.
+
+Success criteria
+Quiz path works end-to-end; BAL reward issued; anonymity preserved at UI level.
+
+summary.md — append
+Quiz flow done; notes on anonymity limits (on-chain event still includes candidate ID).
+
+10) Results & Ranking
+
+Paste to v0:
+
+Task: Implement /results.
+
+Read all candidates & votes; sort in UI; highlight the winner; show totals and percentages.
+
+If endTs passed, show “Finalized” badge (call finalizeIfEnded() once for demo).
+
+Add copy-to-clipboard of summary stats.
+
+Success criteria
+Accurate, sorted results; winner clearly shown.
+
+summary.md — append
+Results page done; next: tests & polish.
+
+11) Frontend Tests & UX Polish
+
+Paste to v0:
+
+Task: Add basic React tests (key hooks/components). Improve UX.
+
+Tests for candidate list, voting buttons disabled outside window, error banners on failures.
+
+UX: toasts on tx pending/success/failure; network guard; input validation; loading states.
+
+Add lightweight logging (dev-only) and a “Debug” panel with last tx hash.
+
+Success criteria
+Frontend tests pass; UX feels robust; errors are actionable.
+
+summary.md — append
+Tests list; open UI todos; next: security pass.
+
+15) Optional Bonus Feature(s) — (frontend variants)
+
+Paste to v0 (optional):
+
+Task (optional): Add one original feature for bonus points. Choose one and implement cleanly:
+
+Simple admin-set topic labels & weights for questionnaire
+
+CSV export button in /results for per-candidate stats
+
+Provide quick tests or a demo path.
+
+Success criteria
+One bonus feature delivered without breaking core flows.
+
+summary.md — append
+Feature summary; tests/demos added.
+
+16) Wrap-Up (Frontend README block)
+
+Paste to v0:
+
+Task: Produce the frontend sections for the final README.md.
+
+Include: prerequisites, env setup (RPC, chain ID), run scripts, admin workflow, voter workflow (direct & quiz), expected outputs/screens, common errors (wrong chain, missing proofs, not owner).
+
+Success criteria
+FE docs ready to merge into the final README.
+
+summary.md — append
+FE docs staged.

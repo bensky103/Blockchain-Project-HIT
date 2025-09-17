@@ -1,0 +1,26 @@
+{
+  "network": "localhost",
+  "chainId": "31337",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "timestamp": "2025-09-17T06:59:12.188Z",
+  "contracts": {
+    "balToken": {
+      "address": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
+      "txHash": "0xda434be0709b95ba396308d5b4688e13047485ecfa8bfb8639fcef8efd98e36c"
+    },
+    "election": {
+      "address": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
+      "txHash": "0xacffff38ce4335f3cc1ee53a0475443443dc93b05f1e9dea3b48acdf9874ae9c"
+    }
+  },
+  "configuration": {
+    "voteReward": "1000000000000000000",
+    "electionStartTime": 1758096252,
+    "electionEndTime": 1758182652,
+    "merkleRoot": "0x94432e2090dfa3401f0686512a629b24bb749aeb05a3c0ba1cdf3159bf091bfe"
+  },
+  "transactions": {
+    "minterSetup": "0xef1ba104c424d7424d282c2adf57c4fa41f60c15a7f7d7eafdbd9965fc07aebe",
+    "electionCreation": "0x4744c158cbc495c9e51719c57f7588057dbe4c3f5e7735f6767e801e4b49795d"
+  }
+}

@@ -8,13 +8,17 @@
     "test": "hardhat test",
     "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
     "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "deploy:complete:local": "hardhat run scripts/deployComplete.ts --network localhost",
+    "deploy:complete:sepolia": "hardhat run scripts/deployComplete.ts --network sepolia",
     "node": "hardhat node",
     "clean": "hardhat clean",
     "coverage": "hardhat coverage",
     "dev:web": "cd web && npm run dev",
     "build:web": "cd web && npm run build",
     "generate-voters": "ts-node tools/generateVoterList.ts",
-    "setup-election": "ts-node scripts/setupElection.ts"
+    "setup-election": "ts-node scripts/setupElection.ts",
+    "merkle:build": "ts-node tools/buildMerkleTree.ts",
+    "merkle:build:custom": "ts-node tools/buildMerkleTree.ts --input"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",

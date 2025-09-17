@@ -1,87 +1,252 @@
-A) Backend Prompt List (Claude Code) //done
-0. Pre-requisites & Repo Bootstrap
+0) Pre-requisites Prompt (setup & first docs) — DONE
 
-Prompt to Claude Code:
-Prepare workstation (Node LTS, pnpm/npm, Git; VSCode: Solidity/ESLint/Prettier). Initialize repo:
+Paste to Claude Code:
 
-/contracts /scripts /test /tools /docs
-.editorconfig .gitignore package.json
+Task: Prepare my workstation and bootstrap documentation.
+
+List and verify required installs (Node.js LTS, pnpm or npm, Git, VSCode extensions: Solidity, Prettier, ESLint, EditorConfig; MetaMask in browser). Provide commands to check versions.
+
+Create a new repo with this structure and baseline config:
+
+/contracts  /scripts  /test  /web  /tools  /docs
+.editorconfig  .gitignore  package.json  README.seed.md
 
 
-Init Hardhat (TS), add OpenZeppelin, dotenv, merkletreejs. Create docs/summary.md (rolling log) and docs/architecture.md (skeleton). Output commands to install/verify.
+Initialize Hardhat (TypeScript), add OpenZeppelin, dotenv, merkletreejs, wagmi, viem, vite/react-ts in /web.
 
-Success: compiles empty project, docs created, scripts present.
-Update summary.md: “Repo & tooling initialized; next: contract scaffolding.”
+Create docs/summary.md (rolling log) and docs/architecture.md (skeleton headings: Overview, Contracts, Data Flows, Frontend, Deployments, Security, Known Issues).
 
-1. Contract Scaffolding //done
+Output all created files with contents and give me the commands to install and verify (build + test placeholders).
+Remember: begin by reading (or creating) docs/summary.md, then print “Plan for this Step”, and at the end append to docs/summary.md.
 
-Create contracts/Election.sol + contracts/BalToken.sol with storage, events, admin setters; stub modifiers (onlyWhitelisted, onlyDuringElection), no voting yet. BAL is ERC20; minter will be Election.
+Success criteria
+Local repo initialized; scripts to build and test exist; summary.md and architecture.md created with headings; install commands listed; versions check commands included.
 
-Success: clean compile; storage/events ready.
-Update summary.md: “Scaffolded contracts; next: voting + reward + quiz.”
+summary.md — append
+“Installed & scaffolded repo”; tool versions; open TODOs (e.g., contract scaffolding next).
 
-2. Voting + Merkle + Rewards + Quiz //done
+1) Contracts Scaffolding (interfaces, storage, events) — DONE
 
-Implement:
+Paste to Claude Code:
 
-voteDirect(candidateId, proof) with Merkle verification, one-vote rule, reentrancy guard, BAL mint on success.
+Task: Create initial Solidity scaffolding.
 
-voteByQuiz([3]uint8 answers, proof) compute L1 distance to candidate topics; record vote; mint BAL; do not reveal chosen candidate to caller.
+Contracts: contracts/Election.sol, contracts/BalToken.sol.
 
-finalizeIfEnded(); getCandidates(); simple ranking helper or UI-sorted results.
+Use Solidity ≥0.8.20.
 
-Success: compiles; functions implemented; events emitted; guards enforced.
-Update summary.md: “Core voting done; next: tests.”
+Import OpenZeppelin Ownable, ReentrancyGuard, ERC20, AccessControl if needed.
 
-3. Tests (TypeScript, Hardhat) //done
+Election.sol (no full logic yet):
+Storage: bytes32 merkleRoot, uint64 startTs, uint64 endTs, uint256 voteReward, candidate struct {string name, uint256 votes, uint8[3] topics}, mapping candidateId→candidate, dynamic list of candidateIds.
+Events: CandidateAdded, Voted, TimesSet, MerkleRootSet, ResultsFinalized.
+Admin functions (onlyOwner): addCandidate(name, topics[3]), setTimes(start,end), setMerkleRoot(root), setReward(amount), setToken(address).
+Views: getCandidates(), isElectionOpen().
 
-Write comprehensive tests: add candidates; times; whitelist pass/fail; single-vote; reward mint; quiz path; window closed; ownership. Include a Merkle builder helper for fixtures.
+BalToken.sol: ERC20 with mint(address,uint256) access-controlled so Election can mint. Name “BAL Token”, symbol “BAL”.
 
-Success: tests pass with coverage for happy/edge paths.
-Update summary.md: “Tests green; next: tools.”
+Provide stub modifiers: onlyDuringElection, onlyWhitelisted(bytes32[] proof,address voter).
 
-4. Tools — Merkle Builder
+Leave voting logic for next step.
+Output full files and compile.
 
-Create /tools CLI:
+Success criteria
+Contracts compile; no unimplemented imports; events and storage defined; no voting logic yet.
 
-Input: tools/voters.csv (one address per line/header).
+summary.md — append
+Scaffolding details; open items (wire voting, merkle verify, reward, questionnaire, tests).
 
-Output: tools/out/merkle.json → {root, leaves, proofs[address]}.
-Validate, dedupe, checksum; script alias merkle:build.
+2) Voting Logic + Merkle Verification + Reward Mint — DONE
 
-Success: produces root & proofs reliably.
-Update summary.md: “Merkle CLI ready; next: deploy.”
+Paste to Claude Code:
 
-5. Deployment Scripts
+Task: Implement core voting in Election.sol.
 
-Hardhat scripts + .env: deploy BalToken, then Election; grant minter; set reward, root, and times; save to deployments/<network>.json for local & Sepolia.
+Integrate OZ MerkleProof for onlyWhitelisted(proof, voter) modifier.
 
-Success: deployment JSONs created; wiring correct.
-Update summary.md: “Deploy scripts done; next: architecture doc, then FE.”
+Add mapping(address=>bool) hasVoted.
 
-6. Architecture Doc
+Function voteDirect(uint256 candidateId, bytes32[] calldata proof):
 
-Fill docs/architecture.md: components, contract APIs, data flows (ASCII sequences), Merkle flow, time window, quiz math, security notes, known issues.
+require isElectionOpen && !hasVoted[voter] && candidateId exists && merkle OK.
 
-Success: doc complete and consistent.
-Update summary.md: “Architecture documented; next: frontend.”
+Increment candidate votes; set hasVoted=true; emit Voted(voter,candidateId).
 
-7. Security/Gas Pass
+Mint voteReward BAL to voter.
 
-Tighten input checks, access control, NatSpec, event completeness, struct packing, order of effects → interactions, timestamp usage. Add SECURITY.md.
+Function voteByQuiz(uint8[3] calldata answers, bytes32[] calldata proof):
 
-Success: diffs improving safety; SECURITY.md added.
-Update summary.md: “Security pass complete.”
+Compute L1 distance vs each candidate’s topics; choose min; do not reveal to caller which candidate (return success only).
 
-8. Wrap-Up (Backend README block)
+Record vote to that candidate; mint reward; emit Voted(voter,chosenId) without returning ID.
 
-Prepare the backend parts for the final README.md: install, test, tool usage, deploy steps, troubleshooting (env, chains, proofs).
+Add finalizeIfEnded() that is callable by anyone after endTs (no state changes besides emitting ResultsFinalized).
 
-Success: backend sections ready to be merged in final README.
-Update summary.md: “Backend docs staged; hand-off to FE.”
+Add getRanking() view that returns candidate IDs sorted by votes (gas-aware suggestion: return unsorted and let UI sort; still expose a simple on-chain “max” function for demo).
 
-Final Wrap-Up Prompt (Claude Code)
+Security: reentrancy guard around state→mint sequence.
 
-Have Claude generate the final README.md by merging the backend/FE blocks, plus E2E demo steps (start local node → deploy → build Merkle → set root/times → add candidates → vote direct & quiz → see results → check BAL). Add troubleshooting + known limitations and link to docs/architecture.md + SECURITY.md.
+Update BalToken minter role so Election can mint.
+Provide tests outline (next step) and compile.
 
-Success: README.md is runnable and clear; summary.md updated with “Project complete.”
+Success criteria
+Contracts compile; core voting works; reentrancy protected; rewards mint; quiz path implemented.
+
+summary.md — append
+Voting APIs, assumptions, gas notes; TODO: test cases, deploy scripts.
+
+3) Hardhat Tests (TypeScript) //done
+
+Paste to Claude Code:
+
+Task: Add comprehensive tests in /test.
+
+Cover: adding candidates; times; merkle acceptance/rejection; single-vote enforcement; direct vs quiz votes; reward mint; window rejections; non-owner rejections; result visibility; token minter rights.
+
+Add helpers to build a Merkle tree from an array of addresses (fixtures).
+
+Aim for near-100% branch coverage on Election.sol.
+
+Provide commands to run tests.
+
+Success criteria
+Tests compile & run green locally (or with detailed fix steps); coverage summary printed.
+
+summary.md — append
+What’s covered; failing edges (if any); next: scripts & tools.
+
+4) Tooling: Merkle Builder (/tools) //done
+
+Paste to Claude Code:
+
+Task: Create a CLI tool to build the voter Merkle tree.
+
+Input: tools/voters.csv (single column of checksummed addresses or header “address”).
+
+Output:
+
+tools/out/merkle.json → { root, leaves, proofs: { [address]: [proof...] } }
+
+Human log with root & leaf count.
+
+Provide usage commands and integrate into package scripts (e.g., pnpm merkle:build).
+
+Validate addresses; deduplicate; checksum; show rejected lines.
+
+Success criteria
+Running the tool outputs a valid root and per-voter proofs.
+
+summary.md — append
+Root generated (sample); file paths; TODO: frontend proof consumption.
+
+5) Deployment Scripts //testing phase
+
+Paste to Claude Code:
+
+Task: Add Hardhat deployment scripts.
+
+.env for PRIVATE_KEY / RPC_URL (Sepolia optional).
+
+Script order: deploy BalToken, deploy Election, set Election as minter, set initial voteReward (e.g., 1e18), set Merkle root, set times (now+X to now+Y).
+
+Save deployed addresses to deployments/<network>.json.
+
+Provide commands: local node, deploy local, deploy sepolia (optional).
+
+Print a short runbook (start node → deploy → verify basic interaction).
+
+Success criteria
+Scripts produce address JSON; contract wiring correct; runbook clear.
+
+summary.md — append
+Addresses per network; known risks; next: frontend boot.
+
+12) Security, Gas & Readability Pass (contracts-focused)
+
+Paste to Claude Code:
+
+Task: Do a security/readability pass.
+
+Contracts: check input validation, access control, reentrancy, event emission, timestamp usage, out-of-window votes, integer ranges (topics 0–100), zero addresses.
+
+Gas notes: pack structs, use uint32/64 where safe, pre-checks before external calls.
+
+Add NatSpec & docstrings across contracts.
+
+Produce a short SECURITY.md with threat model & mitigations.
+
+Success criteria
+Concrete diffs improving safety; SECURITY.md created.
+
+summary.md — append
+Risks & mitigations; remaining nits.
+
+13) E2E Scripted Demo (backend-authored runbook)
+
+Paste to Claude Code:
+
+Task: Provide an E2E demo script (manual runbook).
+
+Steps: start local node → deploy → generate merkle → set root & times → add candidates → vote (direct & quiz) → see results → check BAL balances.
+
+Provide all commands, addresses placeholders, and expected outputs.
+
+Success criteria
+Clear, reproducible runbook with no gaps.
+
+summary.md — append
+Demo done; ready for wrap-up docs.
+
+14) architecture.md (fill with content + diagrams)
+
+Paste to Claude Code:
+
+Task: Fill docs/architecture.md.
+
+Sections: Overview, Components, Contract APIs (signatures + events), Data Flows (sequence diagrams in ASCII), Merkle process, Voting window logic, Questionnaire math, Frontend architecture, Deployment layout, Security considerations, Known issues, Future work.
+
+Keep it concise but complete, in English.
+
+Success criteria
+architecture.md is thorough and matches current code.
+
+summary.md — append
+Architecture doc authored; alignment notes.
+
+15) Optional Bonus Feature(s) — (backend variants)
+
+Paste to Claude Code:
+
+Task (optional): Add one original feature for bonus points. Choose one and implement cleanly:
+
+Airdrop BAL to non-voters after election (claimable)
+
+CSV export of results + per-candidate stats (script)
+
+Provide tests or a demo path as applicable.
+
+Success criteria
+One bonus feature delivered without breaking core flows.
+
+summary.md — append
+Feature summary; tests/demos added.
+
+16) Wrap-Up Prompt (final README + hygiene)
+
+Paste to Claude Code:
+
+Task: Produce a polished README.md and final hygiene.
+
+Generate README.md including: project overview, features list, stack, setup (install → env → compile → test), Merkle tool usage, deploy (local & Sepolia), running the web app, admin how-to, voter how-to (direct & quiz), expected outputs/screens, troubleshooting (common errors & fixes), security notes, known limitations, and credits.
+
+Ensure package.json scripts are consistent across root and subprojects.
+
+Ensure lint/prettier configs are present and runnable.
+
+Update docs/summary.md with a final status and next steps.
+
+Success criteria
+README is copy-paste runnable; scripts coherent; formatting consistent; final summary.md updated.
+
+summary.md — append
+Final status; what’s left (if anything); checklist for demo day.
