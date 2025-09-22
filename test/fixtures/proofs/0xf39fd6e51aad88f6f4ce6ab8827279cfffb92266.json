@@ -1,0 +1,10 @@
+{
+  "address": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+  "proof": [
+    "0x00314e565e0574cb412563df634608d76f5c59d9f817e85966100ec1d48005c0",
+    "0x7e0eefeb2d8740528b8f598997a219669f0842302d3c573e9bb7262be3387e63",
+    "0x90a5fdc765808e5a2e0d816f52f09820c5f167703ce08d078eb87e2c194c5525"
+  ],
+  "name": "Alice Johnson",
+  "email": "alice@example.com"
+}

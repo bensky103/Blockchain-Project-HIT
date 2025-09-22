@@ -1,0 +1,25 @@
+{
+  "network": "localhost",
+  "chainId": "31337",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "timestamp": "2025-09-17T06:58:51.178Z",
+  "contracts": {
+    "balToken": {
+      "address": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+      "txHash": "0x7be46651a08001dc36567198eeac25c37b0fc34f4d02797d88dd75740ae0d4e9"
+    },
+    "election": {
+      "address": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+      "txHash": "0xf1a650351b60fb55c22ecea9940304b576e461c0492a88f9fdd5e7f7061d8b50"
+    }
+  },
+  "configuration": {
+    "voteReward": "1000000000000000000",
+    "electionStartTime": 1758095931,
+    "electionEndTime": 1758182331,
+    "merkleRoot": "0x94432e2090dfa3401f0686512a629b24bb749aeb05a3c0ba1cdf3159bf091bfe"
+  },
+  "transactions": {
+    "minterSetup": "0x01f74a7c1c0cc9d603ef2c3e5c39218a3f068abf503c0231d0cd5cd3168e035a"
+  }
+}

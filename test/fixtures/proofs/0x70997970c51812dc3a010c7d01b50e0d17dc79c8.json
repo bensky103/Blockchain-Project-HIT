@@ -1,0 +1,10 @@
+{
+  "address": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+  "proof": [
+    "0xe9707d0e6171f728f7473c24cc0432a9b07eaaf1efed6a137a4a8c12c79552d9",
+    "0x7e0eefeb2d8740528b8f598997a219669f0842302d3c573e9bb7262be3387e63",
+    "0x90a5fdc765808e5a2e0d816f52f09820c5f167703ce08d078eb87e2c194c5525"
+  ],
+  "name": "Bob Smith",
+  "email": "bob@example.com"
+}

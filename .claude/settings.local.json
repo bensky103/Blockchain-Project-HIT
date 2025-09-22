@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npm run compile:*)",
+      "Bash(npx hardhat:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm ls:*)",
+      "Bash(Remove-Item -Recurse -Force node_modules)",
+      "Bash(Get-ChildItem -Force)",
+      "Bash(npm run deploy:local:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(npm test)",
+      "Bash(find:*)",
+      "Bash(dir:*)",
+      "Bash(Get-ChildItem -Recurse -Name \"Election.json\")",
+      "Bash(npm run coverage:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npm run merkle:build:*)",
+      "Bash(npm run:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
