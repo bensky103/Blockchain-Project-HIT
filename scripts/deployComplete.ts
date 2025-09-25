@@ -2,9 +2,9 @@
 
 import { ethers } from "hardhat";
 import { Contract } from "ethers";
-import * as fs from 'fs';
-import * as path from 'path';
-import dotenv from 'dotenv';
+import * as fs from "fs";
+import * as path from "path";
+import dotenv from "dotenv";
 
 // Load environment variables
 dotenv.config();
@@ -134,7 +134,7 @@ async function main(): Promise<void> {
     let merkleRoot = "0x0000000000000000000000000000000000000000000000000000000000000001"; // Non-zero default
 
     if (fs.existsSync(merkleTreePath)) {
-      const merkleData = JSON.parse(fs.readFileSync(merkleTreePath, 'utf-8'));
+      const merkleData = JSON.parse(fs.readFileSync(merkleTreePath, "utf-8"));
       merkleRoot = merkleData.root;
       deploymentData.configuration.merkleRoot = merkleRoot;
       console.log("✅ Found existing Merkle tree with root:", merkleRoot);
@@ -209,8 +209,8 @@ async function main(): Promise<void> {
     console.log("");
 
     console.log("🔗 Useful commands:");
-    console.log(`- Add candidate: await election.addCandidate("Name", "Description", [1,2,3])`);
-    console.log(`- Check election: await election.elections(0)`);
+    console.log("- Add candidate: await election.addCandidate(\"Name\", \"Description\", [1,2,3])");
+    console.log("- Check election: await election.elections(0)");
     console.log(`- Get BAL balance: await balToken.balanceOf("${deployer.address}")`);
 
   } catch (error) {

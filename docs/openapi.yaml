@@ -1,0 +1,1096 @@
+openapi: 3.0.3
+info:
+  title: Election DApp API
+  description: |
+    Ethereum-compatible Election DApp API specification for blockchain-based voting system.
+
+    This API describes the smart contract interfaces and client-side services for:
+    - Election management and administration
+    - Candidate management with questionnaire profiles
+    - Merkle tree-based voter verification
+    - Direct and anonymous quiz-based voting
+    - ERC-20 token rewards (BAL tokens)
+    - Results ranking and airdrop functionality
+
+    **Tech Stack:**
+    - Smart Contracts: Solidity + Hardhat + OpenZeppelin
+    - Frontend: React + Vite + TypeScript + wagmi + viem
+    - Network: Hardhat local (Sepolia for demo)
+  version: 1.0.0
+  contact:
+    name: Elections-2025 Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8545
+    description: Local Hardhat Network
+  - url: https://sepolia.infura.io/v3/{project-id}
+    description: Sepolia Testnet
+    variables:
+      project-id:
+        default: your-project-id
+        description: Infura project ID
+
+tags:
+  - name: Election Management
+    description: Core election administration operations
+  - name: Candidate Management
+    description: Managing election candidates
+  - name: Voting Operations
+    description: Direct and anonymous voting functionality
+  - name: Results & Analytics
+    description: Election results and statistics
+  - name: Token Management
+    description: BAL token operations and rewards
+  - name: Merkle Verification
+    description: Voter eligibility and proof verification
+  - name: Airdrop Operations
+    description: Non-voter airdrop functionality
+
+paths:
+  # Election Management
+  /election/create:
+    post:
+      tags:
+        - Election Management
+      summary: Create new election
+      description: Create a new election with specified parameters (admin only)
+      operationId: createElection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateElectionRequest'
+      responses:
+        '200':
+          description: Election created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Invalid parameters
+        '401':
+          description: Unauthorized - admin only
+
+  /election/info:
+    get:
+      tags:
+        - Election Management
+      summary: Get election information
+      description: Retrieve current election configuration and metadata
+      operationId: getElectionInfo
+      responses:
+        '200':
+          description: Election information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElectionConfig'
+
+  /election/status:
+    get:
+      tags:
+        - Election Management
+      summary: Get election status
+      description: Get current election status (Not Started, Scheduled, Active, Ended, Completed)
+      operationId: getElectionStatus
+      responses:
+        '200':
+          description: Election status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElectionStatusResponse'
+
+  /election/end:
+    post:
+      tags:
+        - Election Management
+      summary: End election
+      description: Manually end the election (admin only)
+      operationId: endElection
+      responses:
+        '200':
+          description: Election ended successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /election/publish-results:
+    post:
+      tags:
+        - Election Management
+      summary: Publish election results
+      description: Publish final election results (admin only)
+      operationId: publishResults
+      responses:
+        '200':
+          description: Results published successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  # Candidate Management
+  /candidates:
+    get:
+      tags:
+        - Candidate Management
+      summary: Get all candidates
+      description: Retrieve list of all election candidates
+      operationId: getAllCandidates
+      responses:
+        '200':
+          description: Candidates retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Candidate'
+
+    post:
+      tags:
+        - Candidate Management
+      summary: Add new candidate
+      description: Add a new candidate to the election (admin only, before voting starts)
+      operationId: addCandidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCandidateRequest'
+      responses:
+        '200':
+          description: Candidate added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /candidates/active:
+    get:
+      tags:
+        - Candidate Management
+      summary: Get active candidates
+      description: Retrieve only active (non-deactivated) candidates
+      operationId: getActiveCandidates
+      responses:
+        '200':
+          description: Active candidates retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Candidate'
+
+  /candidates/{candidateId}:
+    get:
+      tags:
+        - Candidate Management
+      summary: Get candidate details
+      description: Retrieve detailed information about a specific candidate
+      operationId: getCandidate
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Candidate details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Candidate'
+        '404':
+          description: Candidate not found
+
+    put:
+      tags:
+        - Candidate Management
+      summary: Update candidate
+      description: Update candidate information (admin only, before voting starts)
+      operationId: updateCandidate
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCandidateRequest'
+      responses:
+        '200':
+          description: Candidate updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+    delete:
+      tags:
+        - Candidate Management
+      summary: Deactivate candidate
+      description: Deactivate a candidate (admin only, before voting starts)
+      operationId: deactivateCandidate
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Candidate deactivated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  # Voting Operations
+  /vote/direct:
+    post:
+      tags:
+        - Voting Operations
+      summary: Cast direct vote
+      description: Vote directly for a specific candidate with Merkle proof verification
+      operationId: voteDirect
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DirectVoteRequest'
+      responses:
+        '200':
+          description: Vote cast successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Invalid vote or already voted
+        '403':
+          description: Not authorized to vote
+
+  /vote/quiz:
+    post:
+      tags:
+        - Voting Operations
+      summary: Cast anonymous quiz-based vote
+      description: Vote anonymously based on policy preference quiz answers
+      operationId: voteByQuiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuizVoteRequest'
+      responses:
+        '200':
+          description: Anonymous vote cast successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizVoteResponse'
+
+  /vote/status/{address}:
+    get:
+      tags:
+        - Voting Operations
+      summary: Check voting status
+      description: Check if an address has already voted
+      operationId: hasVoted
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^0x[a-fA-F0-9]{40}$'
+      responses:
+        '200':
+          description: Voting status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hasVoted:
+                    type: boolean
+                  candidateId:
+                    type: integer
+                    nullable: true
+
+  /vote/eligibility/{address}:
+    get:
+      tags:
+        - Voting Operations
+      summary: Check voter eligibility
+      description: Check if an address is eligible to vote (simplified version)
+      operationId: isEligibleVoter
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^0x[a-fA-F0-9]{40}$'
+      responses:
+        '200':
+          description: Eligibility status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eligible:
+                    type: boolean
+
+  # Results & Analytics
+  /results/ranking:
+    get:
+      tags:
+        - Results & Analytics
+      summary: Get election rankings
+      description: Get current vote counts for all candidates (unsorted for gas efficiency)
+      operationId: getRanking
+      responses:
+        '200':
+          description: Rankings retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RankingResponse'
+
+  /results/ranked:
+    get:
+      tags:
+        - Results & Analytics
+      summary: Get ranked results
+      description: Get candidates sorted by vote count (highest to lowest)
+      operationId: getRankedResults
+      responses:
+        '200':
+          description: Ranked results retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RankingResponse'
+
+  /results/winner:
+    get:
+      tags:
+        - Results & Analytics
+      summary: Get winning candidate
+      description: Get the candidate with the most votes
+      operationId: getWinningCandidate
+      responses:
+        '200':
+          description: Winner retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WinnerResponse'
+
+  /results/totals:
+    get:
+      tags:
+        - Results & Analytics
+      summary: Get vote totals
+      description: Get total number of votes cast
+      operationId: getTotalVotes
+      responses:
+        '200':
+          description: Vote totals retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalVotes:
+                    type: integer
+                  candidateCount:
+                    type: integer
+
+  # Token Management
+  /token/balance/{address}:
+    get:
+      tags:
+        - Token Management
+      summary: Get BAL token balance
+      description: Get BAL token balance for an address
+      operationId: getBalanceOf
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^0x[a-fA-F0-9]{40}$'
+      responses:
+        '200':
+          description: Balance retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  balance:
+                    type: string
+                    description: Balance in wei (use parseEther to convert)
+
+  /token/reward:
+    get:
+      tags:
+        - Token Management
+      summary: Get vote reward amount
+      description: Get the standard voting reward amount (1 BAL)
+      operationId: getVoteReward
+      responses:
+        '200':
+          description: Reward amount retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  amount:
+                    type: string
+                    description: Reward amount in wei
+
+  /token/supply:
+    get:
+      tags:
+        - Token Management
+      summary: Get token supply info
+      description: Get total and remaining token supply information
+      operationId: getSupplyInfo
+      responses:
+        '200':
+          description: Supply info retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSupply:
+                    type: string
+                  maxSupply:
+                    type: string
+                  remainingSupply:
+                    type: string
+
+  /token/minter/add:
+    post:
+      tags:
+        - Token Management
+      summary: Add authorized minter
+      description: Add an address as authorized token minter (owner only)
+      operationId: addMinter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                minter:
+                  type: string
+                  pattern: '^0x[a-fA-F0-9]{40}$'
+      responses:
+        '200':
+          description: Minter added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  # Merkle Verification
+  /merkle/root:
+    get:
+      tags:
+        - Merkle Verification
+      summary: Get Merkle root
+      description: Get the current voter verification Merkle root
+      operationId: getMerkleRoot
+      responses:
+        '200':
+          description: Merkle root retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  root:
+                    type: string
+                    pattern: '^0x[a-fA-F0-9]{64}$'
+
+    put:
+      tags:
+        - Merkle Verification
+      summary: Update Merkle root
+      description: Update the voter verification Merkle root (admin only)
+      operationId: updateMerkleRoot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                root:
+                  type: string
+                  pattern: '^0x[a-fA-F0-9]{64}$'
+      responses:
+        '200':
+          description: Merkle root updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /merkle/proof/{address}:
+    get:
+      tags:
+        - Merkle Verification
+      summary: Get Merkle proof for address
+      description: Get Merkle proof for voter address from client-side service
+      operationId: getMerkleProof
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^0x[a-fA-F0-9]{40}$'
+      responses:
+        '200':
+          description: Merkle proof retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proof:
+                    type: array
+                    items:
+                      type: string
+                      pattern: '^0x[a-fA-F0-9]{64}$'
+                  found:
+                    type: boolean
+        '404':
+          description: Address not eligible
+
+  /merkle/eligible-voters:
+    get:
+      tags:
+        - Merkle Verification
+      summary: Get eligible voters
+      description: Get list of all eligible voter addresses
+      operationId: getEligibleVoters
+      responses:
+        '200':
+          description: Eligible voters retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  voters:
+                    type: array
+                    items:
+                      type: string
+                      pattern: '^0x[a-fA-F0-9]{40}$'
+                  count:
+                    type: integer
+
+  /merkle/stats:
+    get:
+      tags:
+        - Merkle Verification
+      summary: Get voter statistics
+      description: Get statistics about eligible voters and Merkle tree
+      operationId: getVoterStats
+      responses:
+        '200':
+          description: Voter statistics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoterStatsResponse'
+
+  # Airdrop Operations
+  /airdrop/amount:
+    get:
+      tags:
+        - Airdrop Operations
+      summary: Get airdrop amount
+      description: Get the current airdrop amount for non-voters
+      operationId: getAirdropAmount
+      responses:
+        '200':
+          description: Airdrop amount retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  amount:
+                    type: string
+                    description: Airdrop amount in wei
+
+    put:
+      tags:
+        - Airdrop Operations
+      summary: Set airdrop amount
+      description: Set the airdrop amount for non-voters (admin only)
+      operationId: setAirdropAmount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: string
+                  description: Airdrop amount in wei
+      responses:
+        '200':
+          description: Airdrop amount set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /airdrop/enable:
+    post:
+      tags:
+        - Airdrop Operations
+      summary: Enable airdrop
+      description: Enable airdrop distribution (admin only, after election ends)
+      operationId: enableAirdrop
+      responses:
+        '200':
+          description: Airdrop enabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /airdrop/claim:
+    post:
+      tags:
+        - Airdrop Operations
+      summary: Claim airdrop
+      description: Claim airdrop tokens for eligible non-voters
+      operationId: claimAirdrop
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                proof:
+                  type: array
+                  items:
+                    type: string
+                    pattern: '^0x[a-fA-F0-9]{64}$'
+      responses:
+        '200':
+          description: Airdrop claimed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /airdrop/status/{address}:
+    get:
+      tags:
+        - Airdrop Operations
+      summary: Check airdrop claim status
+      description: Check if an address has claimed their airdrop
+      operationId: hasClaimedAirdrop
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^0x[a-fA-F0-9]{40}$'
+      responses:
+        '200':
+          description: Claim status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  claimed:
+                    type: boolean
+                  eligible:
+                    type: boolean
+
+components:
+  schemas:
+    # Core Election Schemas
+    ElectionConfig:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Election name
+        description:
+          type: string
+          description: Election description
+        startTime:
+          type: integer
+          description: Election start timestamp
+        endTime:
+          type: integer
+          description: Election end timestamp
+        maxCandidates:
+          type: integer
+          description: Maximum allowed candidates
+        voterMerkleRoot:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{64}$'
+          description: Merkle root for voter verification
+        isActive:
+          type: boolean
+          description: Whether election is active
+        resultsPublished:
+          type: boolean
+          description: Whether results are published
+        questionnaireEnabled:
+          type: boolean
+          description: Whether anonymous voting is enabled
+
+    ElectionStatusResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: Election status enum (0=Not Started, 1=Scheduled, 2=Active, 3=Ended, 4=Completed)
+        statusText:
+          type: string
+          description: Human-readable status
+        isOpen:
+          type: boolean
+          description: Whether voting is currently open
+
+    CreateElectionRequest:
+      type: object
+      required:
+        - name
+        - startTime
+        - endTime
+        - voterMerkleRoot
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Election name
+        description:
+          type: string
+          description: Election description
+        startTime:
+          type: integer
+          minimum: 1
+          description: Election start timestamp (must be future + 1 hour buffer)
+        endTime:
+          type: integer
+          minimum: 1
+          description: Election end timestamp (must be after start)
+        voterMerkleRoot:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{64}$'
+          description: Merkle root for voter verification
+        questionnaireEnabled:
+          type: boolean
+          default: false
+          description: Enable anonymous quiz-based voting
+
+    # Candidate Schemas
+    Candidate:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Candidate ID
+        name:
+          type: string
+          description: Candidate name
+        description:
+          type: string
+          description: Candidate description
+        voteCount:
+          type: integer
+          description: Number of votes received
+        isActive:
+          type: boolean
+          description: Whether candidate is active
+        questionnaireProfile:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 10
+          minItems: 3
+          maxItems: 3
+          description: Policy positions on 0-10 scale
+
+    AddCandidateRequest:
+      type: object
+      required:
+        - name
+        - questionnaireProfile
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Candidate name
+        description:
+          type: string
+          description: Candidate description
+        questionnaireProfile:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 10
+          minItems: 3
+          maxItems: 3
+          description: Policy positions on 0-10 scale
+
+    UpdateCandidateRequest:
+      type: object
+      required:
+        - name
+        - questionnaireProfile
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Updated candidate name
+        description:
+          type: string
+          description: Updated candidate description
+        questionnaireProfile:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 10
+          minItems: 3
+          maxItems: 3
+          description: Updated policy positions
+
+    # Voting Schemas
+    DirectVoteRequest:
+      type: object
+      required:
+        - candidateId
+        - proof
+      properties:
+        candidateId:
+          type: integer
+          minimum: 1
+          description: ID of candidate to vote for
+        proof:
+          type: array
+          items:
+            type: string
+            pattern: '^0x[a-fA-F0-9]{64}$'
+          description: Merkle proof for voter verification
+
+    QuizVoteRequest:
+      type: object
+      required:
+        - answers
+        - proof
+      properties:
+        answers:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 10
+          minItems: 3
+          maxItems: 3
+          description: Policy preference answers on 0-10 scale
+        proof:
+          type: array
+          items:
+            type: string
+            pattern: '^0x[a-fA-F0-9]{64}$'
+          description: Merkle proof for voter verification
+
+    QuizVoteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether vote was cast successfully
+        transactionHash:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{64}$'
+          description: Transaction hash
+        message:
+          type: string
+          description: Success message
+
+    # Results Schemas
+    RankingResponse:
+      type: object
+      properties:
+        candidateIds:
+          type: array
+          items:
+            type: integer
+          description: Array of candidate IDs
+        voteCounts:
+          type: array
+          items:
+            type: integer
+          description: Array of vote counts (corresponding to candidate IDs)
+
+    WinnerResponse:
+      type: object
+      properties:
+        candidateId:
+          type: integer
+          description: ID of winning candidate
+        voteCount:
+          type: integer
+          description: Number of votes received by winner
+        candidate:
+          $ref: '#/components/schemas/Candidate'
+
+    # Utility Schemas
+    TransactionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether transaction was successful
+        transactionHash:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{64}$'
+          description: Transaction hash
+        blockNumber:
+          type: integer
+          description: Block number where transaction was mined
+        gasUsed:
+          type: string
+          description: Gas used for transaction
+
+    VoterStatsResponse:
+      type: object
+      properties:
+        totalEligible:
+          type: integer
+          description: Total number of eligible voters
+        merkleRoot:
+          type: string
+          nullable: true
+          pattern: '^0x[a-fA-F0-9]{64}$'
+          description: Current Merkle root
+        hasData:
+          type: boolean
+          description: Whether Merkle data is loaded
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          description: Additional error details
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Unauthorized - admin access required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Forbidden - operation not allowed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ConflictError:
+      description: Conflict - operation cannot be performed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  securitySchemes:
+    WalletSignature:
+      type: apiKey
+      in: header
+      name: X-Wallet-Signature
+      description: Ethereum wallet signature for authentication
+
+security:
+  - WalletSignature: []
+
+# Common error codes and their meanings
+x-error-codes:
+  ZeroAddress: "Zero address provided where not allowed"
+  InvalidTimeFrame: "Invalid election time parameters"
+  EmptyString: "Empty string provided where not allowed"
+  InvalidMerkleProof: "Merkle proof verification failed"
+  ElectionNotStarted: "Election has not started yet"
+  VotingPeriodActive: "Cannot modify during active voting period"
+  InvalidQuestionnaire: "Questionnaire values out of range (0-10)"
+  AlreadyVoted: "Address has already voted"
+  CandidateNotActive: "Candidate is not active"
+  ElectionEndedError: "Election has already ended"
+  TooManyCandidates: "Maximum candidates limit exceeded"
+  CandidateNotFound: "Candidate ID does not exist"
+  AirdropNotEnabled: "Airdrop not enabled yet"
+  VoterNotEligibleForAirdrop: "Voter already voted, not eligible for airdrop"
+  AirdropAlreadyClaimed: "Airdrop already claimed by address"
+  ElectionStillActive: "Election is still active"

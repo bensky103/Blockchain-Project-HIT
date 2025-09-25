@@ -19,7 +19,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(npm run merkle:build:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(timeout 15 npm run dev)",
+      "Bash(timeout 10 npm run dev)"
     ],
     "deny": [],
     "ask": []

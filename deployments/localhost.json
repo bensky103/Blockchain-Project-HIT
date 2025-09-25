@@ -2,25 +2,25 @@
   "network": "localhost",
   "chainId": "31337",
   "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "timestamp": "2025-09-17T06:59:12.188Z",
+  "timestamp": "2025-09-23T12:18:40.954Z",
   "contracts": {
     "balToken": {
-      "address": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
-      "txHash": "0xda434be0709b95ba396308d5b4688e13047485ecfa8bfb8639fcef8efd98e36c"
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "txHash": "0xdeabf879d6232077090fff108837e0d85cc306a15de7f0a4bfcfa6b3cb468cf3"
     },
     "election": {
-      "address": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
-      "txHash": "0xacffff38ce4335f3cc1ee53a0475443443dc93b05f1e9dea3b48acdf9874ae9c"
+      "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "txHash": "0x45dc2743c8d40ca6d1738a2e320e8b8f6195a07aa95c55f5b47428fc03a14a2b"
     }
   },
   "configuration": {
     "voteReward": "1000000000000000000",
-    "electionStartTime": 1758096252,
-    "electionEndTime": 1758182652,
+    "electionStartTime": 1758633821,
+    "electionEndTime": 1758720221,
     "merkleRoot": "0x94432e2090dfa3401f0686512a629b24bb749aeb05a3c0ba1cdf3159bf091bfe"
   },
   "transactions": {
-    "minterSetup": "0xef1ba104c424d7424d282c2adf57c4fa41f60c15a7f7d7eafdbd9965fc07aebe",
-    "electionCreation": "0x4744c158cbc495c9e51719c57f7588057dbe4c3f5e7735f6767e801e4b49795d"
+    "minterSetup": "0x4fae228f459695da926c1b688538faee789700e30c4786c992ab7aeb29df428d",
+    "electionCreation": "0x6412c9caae6b321cbc9cd1a3818d44fdfe134463641703ec4f28a7e19acd86d2"
   }
 }

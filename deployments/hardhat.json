@@ -1,0 +1,26 @@
+{
+  "network": "hardhat",
+  "chainId": "31337",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "timestamp": "2025-09-18T10:58:18.590Z",
+  "contracts": {
+    "balToken": {
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "txHash": "0x20823ab4554fd20421ea54f9391d8b4615763e5acb3767e04f2d8e9fc1a2cec2"
+    },
+    "election": {
+      "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "txHash": "0xd20f5eb32dfeb067424cae3ef2757e60581c1eac970596f8660507f280768047"
+    }
+  },
+  "configuration": {
+    "voteReward": "1000000000000000000",
+    "electionStartTime": 1758196998,
+    "electionEndTime": 1758283398,
+    "merkleRoot": "0x94432e2090dfa3401f0686512a629b24bb749aeb05a3c0ba1cdf3159bf091bfe"
+  },
+  "transactions": {
+    "minterSetup": "0xddee96bc9c44ab522273984166d8095c97ac95a97cd7e13006bba680607a5556",
+    "electionCreation": "0xd4dc51483d48a60431891cd2fd1880bcf6301431f62b10ce5dc15972f828dcb2"
+  }
+}

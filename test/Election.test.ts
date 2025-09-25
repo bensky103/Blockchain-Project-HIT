@@ -1125,4 +1125,296 @@ describe("Election", function () {
       expect(await election.hasVoted(voter1.address)).to.be.true;
     });
   });
+
+  describe("Non-Voter Airdrop", function () {
+    it("Should allow owner to set airdrop amount", async function () {
+      const { election, owner } = await loadFixture(deployElectionFixture);
+      
+      const airdropAmount = ethers.parseEther("0.5");
+      
+      await expect(election.connect(owner).setAirdropAmount(airdropAmount))
+        .to.emit(election, "AirdropAmountSet")
+        .withArgs(airdropAmount);
+        
+      expect(await election.airdropAmount()).to.equal(airdropAmount);
+    });
+
+    it("Should not allow non-owner to set airdrop amount", async function () {
+      const { election, voter1 } = await loadFixture(deployElectionFixture);
+      
+      const airdropAmount = ethers.parseEther("0.5");
+      
+      await expect(
+        election.connect(voter1).setAirdropAmount(airdropAmount)
+      ).to.be.revertedWithCustomError(election, "OwnableUnauthorizedAccount");
+    });
+
+    it("Should not allow enabling airdrop before election ends", async function () {
+      const { election, owner, merkleTree } = await loadFixture(deployElectionFixture);
+      
+      // Create election that hasn't ended yet
+      const startTime = await time.latest() + 3660; // MIN_START_BUFFER + 60 seconds
+      const endTime = startTime + 86400; // 24 hours
+      
+      await election.connect(owner).createElection(
+        "Test Election",
+        "Test Description",
+        startTime,
+        endTime,
+        merkleTree.getRoot(),
+        true
+      );
+      
+      await expect(
+        election.connect(owner).enableAirdrop()
+      ).to.be.revertedWithCustomError(election, "ElectionStillActive");
+    });
+
+    it("Should allow enabling airdrop after election ends", async function () {
+      const { election, owner, merkleTree } = await loadFixture(deployElectionFixture);
+      
+      const startTime = await time.latest() + 3660; // MIN_START_BUFFER + 60 seconds
+      const endTime = startTime + 3600; // 1 hour election
+      
+      await election.connect(owner).createElection(
+        "Test Election",
+        "Test Description",
+        startTime,
+        endTime,
+        merkleTree.getRoot(),
+        true
+      );
+      
+      // Fast forward past election end
+      await time.increaseTo(endTime + 1);
+      
+      await expect(election.connect(owner).enableAirdrop())
+        .to.emit(election, "AirdropEnabled");
+        
+      expect(await election.airdropEnabled()).to.be.true;
+    });
+
+    it("Should not allow airdrop claim before enabled", async function () {
+      const { election, owner, voter1, merkleTree } = await loadFixture(deployElectionFixture);
+      
+      const startTime = await time.latest() + 3660; // MIN_START_BUFFER + 60 seconds
+      const endTime = startTime + 3600;
+      
+      await election.connect(owner).createElection(
+        "Test Election",
+        "Test Description",
+        startTime,
+        endTime,
+        merkleTree.getRoot(),
+        true
+      );
+      
+      const proof = merkleTree.getProof(voter1.address);
+      
+      await expect(
+        election.connect(voter1).claimAirdrop(proof)
+      ).to.be.revertedWithCustomError(election, "AirdropNotEnabled");
+    });
+
+    it("Should not allow voters to claim airdrop", async function () {
+      const { election, owner, voter1, merkleTree } = await loadFixture(deployElectionFixture);
+      
+      const startTime = await time.latest() + 3660; // MIN_START_BUFFER + 60 seconds
+      const endTime = startTime + 3600;
+      
+      await election.connect(owner).createElection(
+        "Test Election",
+        "Test Description",
+        startTime,
+        endTime,
+        merkleTree.getRoot(),
+        true
+      );
+      
+      // Set airdrop amount
+      const airdropAmount = ethers.parseEther("0.5");
+      await election.connect(owner).setAirdropAmount(airdropAmount);
+      
+      // Add candidate and vote
+      await election.connect(owner).addCandidate("Test Candidate", "Description", [5, 5, 5]);
+      
+      await time.increaseTo(startTime);
+      const proof = merkleTree.getProof(voter1.address);
+      await election.connect(voter1).voteDirect(1, proof);
+      
+      // End election and enable airdrop
+      await time.increaseTo(endTime + 1);
+      await election.connect(owner).enableAirdrop();
+      
+      // Voter should not be able to claim airdrop
+      await expect(
+        election.connect(voter1).claimAirdrop(proof)
+      ).to.be.revertedWithCustomError(election, "VoterNotEligibleForAirdrop");
+    });
+
+    it("Should allow non-voters to claim airdrop after election", async function () {
+      const { election, balToken, owner, voter1, voter2, merkleTree } = await loadFixture(deployElectionFixture);
+      
+      const startTime = await time.latest() + 3660; // MIN_START_BUFFER + 60 seconds
+      const endTime = startTime + 3600;
+      
+      await election.connect(owner).createElection(
+        "Test Election", 
+        "Test Description",
+        startTime,
+        endTime,
+        merkleTree.getRoot(),
+        true
+      );
+      
+      // Set airdrop amount
+      const airdropAmount = ethers.parseEther("0.5");
+      await election.connect(owner).setAirdropAmount(airdropAmount);
+      
+      // Add candidate
+      await election.connect(owner).addCandidate("Test Candidate", "Description", [5, 5, 5]);
+      
+      // Only voter1 votes, voter2 doesn't vote
+      await time.increaseTo(startTime);
+      const proof1 = merkleTree.getProof(voter1.address);
+      await election.connect(voter1).voteDirect(1, proof1);
+      
+      // End election and enable airdrop
+      await time.increaseTo(endTime + 1);
+      await election.connect(owner).enableAirdrop();
+      
+      // Check initial balance
+      const initialBalance = await balToken.balanceOf(voter2.address);
+      
+      // Non-voter claims airdrop
+      const proof2 = merkleTree.getProof(voter2.address);
+      await expect(election.connect(voter2).claimAirdrop(proof2))
+        .to.emit(election, "AirdropClaimed")
+        .withArgs(voter2.address, airdropAmount);
+      
+      // Check balance increased
+      const finalBalance = await balToken.balanceOf(voter2.address);
+      expect(finalBalance - initialBalance).to.equal(airdropAmount);
+      
+      // Check claim status
+      expect(await election.claimedAirdrop(voter2.address)).to.be.true;
+    });
+
+    it("Should not allow double claiming airdrop", async function () {
+      const { election, owner, voter2, merkleTree } = await loadFixture(deployElectionFixture);
+      
+      const startTime = await time.latest() + 3660; // MIN_START_BUFFER + 60 seconds
+      const endTime = startTime + 3600;
+      
+      await election.connect(owner).createElection(
+        "Test Election",
+        "Test Description", 
+        startTime,
+        endTime,
+        merkleTree.getRoot(),
+        true
+      );
+      
+      // Set airdrop and add candidate
+      const airdropAmount = ethers.parseEther("0.5");
+      await election.connect(owner).setAirdropAmount(airdropAmount);
+      await election.connect(owner).addCandidate("Test Candidate", "Description", [5, 5, 5]);
+      
+      // End election and enable airdrop
+      await time.increaseTo(endTime + 1);
+      await election.connect(owner).enableAirdrop();
+      
+      // First claim should succeed
+      const proof = merkleTree.getProof(voter2.address);
+      await election.connect(voter2).claimAirdrop(proof);
+      
+      // Second claim should fail
+      await expect(
+        election.connect(voter2).claimAirdrop(proof)
+      ).to.be.revertedWithCustomError(election, "AirdropAlreadyClaimed");
+    });
+
+    it("Should require valid Merkle proof for airdrop claim", async function () {
+      const { election, owner, nonVoter, merkleTree } = await loadFixture(deployElectionFixture);
+      
+      const startTime = await time.latest() + 3660; // MIN_START_BUFFER + 60 seconds
+      const endTime = startTime + 3600;
+      
+      await election.connect(owner).createElection(
+        "Test Election",
+        "Test Description",
+        startTime,
+        endTime,
+        merkleTree.getRoot(),
+        true
+      );
+      
+      // Set airdrop amount and enable after election
+      const airdropAmount = ethers.parseEther("0.5");
+      await election.connect(owner).setAirdropAmount(airdropAmount);
+      
+      await time.increaseTo(endTime + 1);
+      await election.connect(owner).enableAirdrop();
+      
+      // Non-whitelisted address should not be able to claim
+      const invalidProof = merkleTree.getProof(nonVoter.address); // This will be invalid
+      
+      await expect(
+        election.connect(nonVoter).claimAirdrop(invalidProof)
+      ).to.be.revertedWithCustomError(election, "InvalidMerkleProof");
+    });
+
+    it("Should handle zero airdrop amount gracefully", async function () {
+      const { election, owner, voter2, merkleTree } = await loadFixture(deployElectionFixture);
+      
+      const startTime = await time.latest() + 3660; // MIN_START_BUFFER + 60 seconds
+      const endTime = startTime + 3600;
+      
+      await election.connect(owner).createElection(
+        "Test Election",
+        "Test Description",
+        startTime,
+        endTime,
+        merkleTree.getRoot(),
+        true
+      );
+      
+      // Don't set airdrop amount (remains 0)
+      await time.increaseTo(endTime + 1);
+      await election.connect(owner).enableAirdrop();
+      
+      // Should not revert, but no tokens minted
+      const proof = merkleTree.getProof(voter2.address);
+      await election.connect(voter2).claimAirdrop(proof);
+      
+      // Should be marked as claimed but no tokens received
+      expect(await election.claimedAirdrop(voter2.address)).to.be.true;
+    });
+
+    it("Should not allow claiming during election period", async function () {
+      const { election, owner, voter2, merkleTree } = await loadFixture(deployElectionFixture);
+      
+      const startTime = await time.latest() + 3660; // MIN_START_BUFFER + 60 seconds
+      const endTime = startTime + 3600;
+      
+      await election.connect(owner).createElection(
+        "Test Election",
+        "Test Description",
+        startTime,
+        endTime,
+        merkleTree.getRoot(),
+        true
+      );
+      
+      const airdropAmount = ethers.parseEther("0.5");
+      await election.connect(owner).setAirdropAmount(airdropAmount);
+      
+      // Try to enable airdrop during election (should fail)
+      await time.increaseTo(startTime + 100);
+      
+      await expect(
+        election.connect(owner).enableAirdrop()
+      ).to.be.revertedWithCustomError(election, "ElectionStillActive");
+    });
+  });
 });
