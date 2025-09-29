@@ -2,7 +2,7 @@
   "network": "localhost",
   "chainId": "31337",
   "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "timestamp": "2025-09-23T12:18:40.954Z",
+  "timestamp": "2025-09-28T16:37:35.310Z",
   "contracts": {
     "balToken": {
       "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
@@ -15,12 +15,12 @@
   },
   "configuration": {
     "voteReward": "1000000000000000000",
-    "electionStartTime": 1758633821,
-    "electionEndTime": 1758720221,
+    "electionStartTime": 1759081355,
+    "electionEndTime": 1759167755,
     "merkleRoot": "0x94432e2090dfa3401f0686512a629b24bb749aeb05a3c0ba1cdf3159bf091bfe"
   },
   "transactions": {
     "minterSetup": "0x4fae228f459695da926c1b688538faee789700e30c4786c992ab7aeb29df428d",
-    "electionCreation": "0x6412c9caae6b321cbc9cd1a3818d44fdfe134463641703ec4f28a7e19acd86d2"
+    "electionCreation": "0xf793a3faebb6ef7ee8cee50a0740c0ce33ab7c734da0839adebeac82640cf6dc"
   }
 }

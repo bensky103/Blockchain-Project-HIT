@@ -54,7 +54,4 @@ deployments/hardhat.json
 *.bin
 *.abi
 
-# Web build
-web/dist/
-web/build/
-web/
+web/node_modules
