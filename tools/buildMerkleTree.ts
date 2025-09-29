@@ -58,10 +58,10 @@ class MerkleTreeBuilder {
     }
 
     let startIndex = 0;
-    const firstLine = lines[0].toLowerCase();
+    const firstLine = lines[0]?.toLowerCase();
 
     // Check if first line is a header
-    if (firstLine === "address" || firstLine.includes("address")) {
+    if (firstLine === "address" || firstLine?.includes("address")) {
       startIndex = 1;
       console.log("📄 Header detected, skipping first line");
     }
@@ -73,9 +73,9 @@ class MerkleTreeBuilder {
       const lineNumber = i + 1;
 
       // Handle CSV format (take first column if comma-separated)
-      const address = line.includes(",") ? line.split(",")[0].trim() : line.trim();
+      const address = line?.includes(",") ? line.split(",")[0]?.trim() : line?.trim();
 
-      if (!address) {
+      if (!address || address === undefined) {
         this.rejectedLines.push(`Line ${lineNumber}: Empty address`);
         continue;
       }
@@ -134,8 +134,10 @@ class MerkleTreeBuilder {
     for (let i = 0; i < this.validAddresses.length; i++) {
       const address = this.validAddresses[i];
       const leaf = leaves[i];
-      const proof = tree.getHexProof(leaf);
-      proofs[address] = proof;
+      if (address && leaf) {
+        const proof = tree.getHexProof(leaf);
+        proofs[address] = proof;
+      }
     }
 
     return {
@@ -208,12 +210,18 @@ async function main() {
     switch (args[i]) {
     case "--input":
     case "-i":
-      inputPath = args[i + 1];
+      const inputArg = args[i + 1];
+      if (inputArg) {
+        inputPath = inputArg;
+      }
       i++;
       break;
     case "--output":
     case "-o":
-      outputPath = args[i + 1];
+      const outputArg = args[i + 1];
+      if (outputArg) {
+        outputPath = outputArg;
+      }
       i++;
       break;
     case "--help":
